@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  heartland-shipyopants-shipping-service
+
+  Sample SAM Template for heartland-shipyopants-shipping-service
+  
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+
+  BasicAWSApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: Basic AWS Api Gateway
+      StageName: Prod
+      Cors:
+        AllowMethods: "'POST, GET, OPTIONS'"
+        AllowHeaders: "'X-Forwarded-For'"
+        AllowOrigin: "'www.example.com'"
+        MaxAge: "'600'"
+        AllowCredentials: true
+
+  ShippingServiceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      Policies:
+        - 
+          SSMParameterReadPolicy:
+            ParameterName: SHIPPO_TOKEN_SB
+      Architectures:
+        - x86_64
+      Events:
+        AddressValidate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BasicAWSApiGateway
+            Path: /address/validate
+            Method: post
+        GetRates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BasicAWSApiGateway
+            Path: /getRates
+            Method: post
+    Metadata:
+      DockerTag: nodejs12.x-v1
+      DockerContext: ./shipyopants-shipping
+      Dockerfile: Dockerfile
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  ShippingServiceApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${BasicAWSApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/address/"
+  ShippingServiceFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt ShippingServiceFunction.Arn
+  ShippingServiceFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt ShippingServiceFunctionRole.Arn
